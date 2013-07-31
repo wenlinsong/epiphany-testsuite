@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+ESDK=${EPIPHANY_HOME}
+ELIBS=${ESDK}/tools/host/lib
+EINCS=${ESDK}/tools/host/include
+ELDF=${ESDK}/bsps/current/fast.ldf
+
+# Build HOST side application
+gcc mesh_wait.c -o mesh_wait.elf -I ${EINCS} -L ${ELIBS} -le-hal
+
+# Build DEVICE side program
+e-gcc -O0 -T ${ELDF} e_mesh_wait.c -o e_mesh_wait.elf -le-lib
+e-gcc -O0 -T ${ELDF} e_mesh_wait_r.c -o e_mesh_wait_r.elf -le-lib
+
+# Convert ebinary to SREC file
+e-objcopy --srec-forceS3 --output-target srec e_mesh_wait.elf e_mesh_wait.srec
+e-objcopy --srec-forceS3 --output-target srec e_mesh_wait_r.elf e_mesh_wait_r.srec
+
+

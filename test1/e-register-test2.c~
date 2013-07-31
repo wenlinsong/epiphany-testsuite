@@ -1,0 +1,115 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "e_lib.h"
+
+char outbuf[128] SECTION("shared_dram");
+unsigned int clear_value(unsigned int prev,unsigned int mask, unsigned int reg_name);
+unsigned int set_value(unsigned int prev,unsigned int mask, unsigned int reg_name, unsigned int i);
+
+int main(void)
+{
+	e_coreid_t coreid;
+	unsigned int *po;
+	unsigned int mask0;
+	unsigned int mask1;
+	unsigned int reg;
+	unsigned int p_value;
+	unsigned int flag0, flag1, flag2;
+	unsigned int temp, veri;
+	po=(unsigned) 0x00006000;
+	po[0] = (unsigned)0x00000000;
+	po[1] = (unsigned)0x00000000;
+	po[2] = (unsigned)0x00000000;
+	veri = 0;
+	
+	while(1)
+	{	
+		po[0] = (unsigned)0x00000000;
+		po[1] = (unsigned)0x00000000;
+		po[2] = (unsigned)0x00000000;
+		while( (po[1]==(unsigned)0x00000000) | (po[2]==(unsigned)0x00000000) )
+		{};
+		veri = veri + 1;
+		mask0 = po[0];		
+		mask1 = po[1];
+		reg = po[2];
+
+		// Store the previous value of the register	
+		p_value = e_reg_read(reg);	
+	
+		sprintf(outbuf,"");	
+		// Test the register	
+		// Clear the register by setting to 0
+		flag0 = clear_value(p_value, mask0, reg);
+
+		// Set the register by setting to 1
+
+		flag1 = set_value(p_value, mask1, reg, veri);
+ 	
+		// Clear the register bt setting to 0
+	
+		flag2 = clear_value(p_value, mask0, reg);
+
+		// Set the register to the previous value
+		e_reg_write(reg, p_value);
+
+	
+		if ((flag0 == 1) && (flag1 == 1) && (flag2 == 1))
+		{
+			sprintf(outbuf, "PASS! 0x%08x", reg);
+		}
+		//po[0] = (unsigned)0x00000000;
+		//po[1] = (unsigned)0x00000000;
+		//po[2] = (unsigned)0x00000000;
+		
+	}
+	
+		return EXIT_SUCCESS;
+		
+}
+	
+
+	//define the function clear_value and set_value	
+	unsigned int clear_value(unsigned int prev, unsigned int mask, unsigned int reg_name)
+	{
+		unsigned int curr;
+		unsigned int tem;
+		unsigned int flag;
+		curr = prev & mask; 
+		e_reg_write(reg_name, curr);
+		tem = e_reg_read(reg_name);
+		if (tem == curr) //change here for verifying
+		{	
+			flag = 1;
+		}else
+		{
+			flag = 0;
+			sprintf(outbuf+strlen(outbuf) ,"We get 0x%08x instead of 0x%08x, reg0x%08x\n", tem, curr, reg_name);
+			
+		}
+		return flag;
+	}
+	
+	unsigned int set_value(unsigned int prev, unsigned int mask, unsigned int reg_name, unsigned int i)
+	{
+		unsigned int curr;
+		unsigned int tem;
+		unsigned int flag;
+		curr = prev | mask; 
+		e_reg_write(reg_name, curr);
+		tem = e_reg_read(reg_name);
+		if (i == 100) { curr = (unsigned) 0x00101011;}
+		if (tem == curr)
+		{	
+			flag = 1;
+		}else
+		{
+			flag = 0;
+			sprintf(outbuf+strlen(outbuf) ,"We get 0x%08x instead of 0x%08x, reg0x%08x\n", tem, curr, reg_name);
+		}
+		return flag;
+	}	
+	
+	
